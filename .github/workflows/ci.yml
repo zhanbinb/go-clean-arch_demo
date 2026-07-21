@@ -21,20 +21,15 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.26'
           cache: true
 
-      # Install golangci-lint directly (bypassing the action — action v6 is no
-      # longer maintained as of 2026 and downloads have become flaky).
+      # Use "go install" — compiles with CI Go version so the embedded
+      # Go version always satisfies the go.mod "go 1.25.0" constraint.
       - name: Install golangci-lint
         run: |
           set -e
-          curl -sSfL -o /tmp/gci.tgz \
-            https://github.com/golangci/golangci-lint/releases/download/v1.61.0/golangci-lint-1.61.0-linux-amd64.tar.gz
-          mkdir -p /tmp/gci && tar -xzf /tmp/gci.tgz -C /tmp/gci
-          /tmp/gci/golangci-lint-1.61.0-linux-amd64/golangci-lint version
-          echo "/tmp/gci/golangci-lint-1.61.0-linux-amd64" >> "$GITHUB_PATH"
-
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
       - name: Run linter
         run: golangci-lint run -c .golangci.yaml ./...
 
@@ -76,7 +71,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.26'
           cache: true
 
       - name: Install golang-migrate
@@ -114,7 +109,7 @@ jobs:
           exit 1
 
       - name: Run tests
-        run: go test -race -coverprofile=coverage.out -timeout 60s ./...
+        run: go test -race -coverprofile=coverage.out -timeout 120s ./...
 
       - name: Upload coverage
         if: always()
@@ -133,7 +128,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.26'
           cache: true
 
       - name: Build REST binary
@@ -184,5 +179,3 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

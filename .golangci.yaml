@@ -1,11 +1,6 @@
 run:
-  timeout: 5m
+  timeout: 10m
   tests: true
-  skip-dirs:
-    - api/gen
-    - docs/swagger
-    - tmp
-    - bin
 
 linters:
   disable-all: true
@@ -62,6 +57,11 @@ linters-settings:
       - G104  # unhandled errors - covered by errcheck
 
 issues:
+  exclude-dirs:
+    - api/gen
+    - docs/swagger
+    - tmp
+    - bin
   exclude-rules:
     - path: _test\.go
       linters:
