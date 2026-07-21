@@ -37,7 +37,7 @@ func Created(c *gin.Context, data interface{}) {
 }
 
 // NoContent writes a 204 response.
-func NoContent(c *gin.Context) { c.Status(http.StatusNoContent) }
+func NoContent(c *gin.Context) { c.AbortWithStatus(http.StatusNoContent) }
 
 // Error writes an error response. The HTTP status is derived from the
 // errcode; the underlying cause (if any) is logged but never sent to client.
