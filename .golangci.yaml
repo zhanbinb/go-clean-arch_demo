@@ -30,11 +30,6 @@ linters-settings:
     confidence: 0.8
     severity: warning
     rules:
-      - name: exported
-        severity: warning
-        disabled: true
-      - name: package-comments
-        severity: warning
       - name: var-naming
         severity: warning
       - name: error-strings
