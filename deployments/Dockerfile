@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---------------- Stage 1: builder ----------------
-FROM golang:1.26-alpine3.21 AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /src
 
