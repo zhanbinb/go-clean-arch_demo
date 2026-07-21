@@ -13,7 +13,9 @@ configs/config.local.yaml
 
 # Generated code
 api/gen/
-docs/swagger/
+docs/swagger/docs.go
+docs/swagger/swagger.json
+docs/swagger/swagger.yaml
 
 # IDE / OS
 .DS_Store
