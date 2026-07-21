@@ -90,9 +90,11 @@ migrate-down: migrate ## Roll back the last migration
 	$(BIN_DIR)/migrate -database $(DB_DSN) -path $(MIGRATIONS_DIR) down 1
 
 .PHONY: migrate-create
-migrate-create: migrate ## Create a new migration pair (NAME=name)
-	@read -p "Migration name: " name; \
-	$(BIN_DIR)/migrate create -ext sql -dir $(MIGRATIONS_DIR) $${name}
+migrate-create: migrate ## Create a new migration pair (NAME=foo_bar). Falls back to interactive prompt if NAME unset.
+	@if [ -z "$$NAME" ]; then \
+		read -p "Migration name: " NAME; \
+	fi; \
+	$(BIN_DIR)/migrate create -ext sql -dir $(MIGRATIONS_DIR) $$NAME
 
 # ---- Dev environment ----------------------------------------------------------
 .PHONY: dev-env
@@ -166,10 +168,13 @@ $(BIN_DIR)/air:
 	@ mkdir -p $(BIN_DIR)
 	GOBIN=$(PWD)/$(BIN_DIR) $(GO) install github.com/air-verse/air@v$(AIR_VERSION)
 
-# Default env vars for migrate-* targets (override on command line)
-DB_HOST ?= 127.0.0.1
-DB_PORT ?= 3306
-DB_USER ?= app
-DB_PASS ?= app
-DB_NAME ?= article
+# DB connection for migrate-* targets.
+# These read from APP_DATABASE_* env vars (set by Viper / CI workflow) so
+# the Makefile targets work in lockstep with the application's config.
+# Override on command line: make DB_HOST=other migrate-up
+DB_HOST  ?= $(or $(APP_DATABASE_HOST),127.0.0.1)
+DB_PORT  ?= $(or $(APP_DATABASE_PORT),3306)
+DB_USER  ?= $(or $(APP_DATABASE_USER),app)
+DB_PASS  ?= $(or $(APP_DATABASE_PASSWORD),app)
+DB_NAME  ?= $(or $(APP_DATABASE_NAME),article)
 AIR_VERSION := 1.52.0
