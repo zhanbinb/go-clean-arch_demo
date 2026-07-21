@@ -1,5 +1,11 @@
 # go-clean-arch_demo
 
+## 📑 文档目录
+
+- [项目总结](#go-clean-arch_demo) — 本文档，介绍架构分层、设计模式与教学价值
+- [基础设施文档](docs/infrastructure.md) — Makefile / Docker / air / golangci-lint 等基础设施详解
+
+
 ## 一句话定位
 
 一个用 **Go + Echo + MySQL** 实现 Clean Architecture 的演示项目：一个极简的 Article/Author CRUD REST API，用来展示如何把"业务规则"与"框架/数据库/UI"解耦。
