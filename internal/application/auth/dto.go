@@ -17,3 +17,9 @@ type LoginResult struct {
 type RefreshInput struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
+
+// RegisterInput is the payload for creating a new user.
+type RegisterInput struct {
+	Username string `json:"username" binding:"required,max=50"`
+	Password string `json:"password" binding:"required,min=8"`
+}
