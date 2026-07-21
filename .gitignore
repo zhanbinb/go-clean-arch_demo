@@ -26,3 +26,10 @@ tmp/
 
 # Vendor (we use Go modules, not vendoring)
 vendor/
+
+
+# Defensive: stray top-level binaries (Makefile builds into bin/, but
+# manual `go build` could leak here)
+/rest
+/grpc
+/engine

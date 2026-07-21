@@ -27,14 +27,14 @@
 
 ## 快速开始
 
-> **第一次使用？** 复制 example 文件作为本地配置起点：
-> ```bash
-> cp .env.example .env            # 被 godotenv 自动加载，覆盖 config.yaml
-> cp configs/config.local.yaml.example configs/config.local.yaml
-> # 编辑 .env 和 config.local.yaml 填入你的本地值
-> ```
+> **加载优先级（低 → 高）**：`config.yaml` < `.env` < `config.<APP_ENV>.yaml` < shell `APP_*` env
 >
-> 加载优先级：`config.yaml` < `.env` < `config.<APP_ENV>.yaml` < shell `APP_*` env
+> 复制 example 文件作为本地配置起点：
+> ```bash
+> cp .env.example .env
+> cp configs/config.local.yaml.example configs/config.local.yaml
+> ```
+
 ```bash
 # 1. 安装工具链
 make install-tools
@@ -45,7 +45,7 @@ make dev-env
 # 3. 应用数据库迁移
 make migrate-up
 
-# 4. 生成 Swagger 文档（首次运行）
+# 4. 生成 Swagger 文档（首次运行；之后改 handler 注解也要重跑）
 make swagger
 
 # 5. 启动服务（开发模式热重载）
@@ -53,9 +53,13 @@ make dev-air
 
 # 或直接构建运行
 make build
-./bin/rest    # REST API on :9090
-./bin/grpc    # gRPC API on :9091
+./bin/rest    # REST API on :9090（Swagger UI: http://localhost:9090/swagger/index.html）
+./bin/grpc    # gRPC API on :9091（grpcurl: grpcurl -plaintext localhost:9091 list）
 ```
+
+> **注意**：跳过第 4 步也能跑，但 `/swagger/index.html` 会显示空白。
+> 启动时日志会输出 `[swagger] stub package loaded — Swagger UI is DISABLED` 警告。
+
 
 ## 📑 文档目录
 
