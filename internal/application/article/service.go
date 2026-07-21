@@ -8,7 +8,6 @@ package article
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.uber.org/zap"
 
@@ -148,5 +147,3 @@ func toDTO(a *article.Article) *ArticleDTO {
 	}
 }
 
-// Sentinel to prevent an unused import warning if formatting helpers change.
-var _ = fmt.Sprintf

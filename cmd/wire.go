@@ -14,7 +14,6 @@ import (
 	"github.com/zhanbinb/go-clean-arch_demo/internal/application/article"
 	"github.com/zhanbinb/go-clean-arch_demo/internal/application/auth"
 	"github.com/zhanbinb/go-clean-arch_demo/internal/application/author"
-	"github.com/zhanbinb/go-clean-arch_demo/internal/application/user"
 	"github.com/zhanbinb/go-clean-arch_demo/internal/infrastructure/config"
 	persist "github.com/zhanbinb/go-clean-arch_demo/internal/infrastructure/persistence/gorm"
 	httpiface "github.com/zhanbinb/go-clean-arch_demo/internal/interfaces/http"
@@ -38,7 +37,6 @@ type Deps struct {
 	ArticleSvc *article.Service
 	AuthorSvc  *author.Service
 	AuthSvc    *auth.Service
-	UserSvc    *user.Service
 
 	// HTTP handlers bundle
 	HTTPHandlers *httpiface.Handlers
@@ -91,7 +89,6 @@ func New(ctx context.Context, env string) (*Deps, error) {
 	articleSvc := article.NewService(articleRepo, authorRepo, log)
 	authorSvc := author.NewService(authorRepo, log)
 	authSvc := auth.NewService(userRepo, jwtMgr, log)
-	userSvc := user.NewService(userRepo, log)
 
 	// Handlers
 	healthH := handler.NewHealthHandler(sqlDB)
@@ -108,7 +105,6 @@ func New(ctx context.Context, env string) (*Deps, error) {
 		ArticleSvc:   articleSvc,
 		AuthorSvc:    authorSvc,
 		AuthSvc:      authSvc,
-		UserSvc:      userSvc,
 		HTTPHandlers: httpHandlers,
 	}, nil
 }

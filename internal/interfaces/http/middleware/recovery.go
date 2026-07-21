@@ -29,12 +29,3 @@ func Recovery(log *logger.Logger) gin.HandlerFunc {
 	}
 }
 
-// MustGetLogger returns the request-scoped logger stored by Logger middleware.
-func MustGetLogger(c *gin.Context) *zap.Logger {
-	if v, ok := c.Get(CtxKeyLogger); ok {
-		if l, ok := v.(*zap.Logger); ok {
-			return l
-		}
-	}
-	return zap.NewNop()
-}
