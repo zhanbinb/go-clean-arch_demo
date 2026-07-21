@@ -3,6 +3,8 @@
 # ---------------- Stage 1: builder ----------------
 FROM golang:1.26-alpine AS builder
 
+RUN apk add --no-cache make
+
 WORKDIR /src
 
 # Cache deps separately
