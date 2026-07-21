@@ -6,10 +6,10 @@ import "time"
 // It is intentionally separate from domain/article.Article to avoid leaking
 // ORM concerns into the domain layer.
 type ArticleModel struct {
-	ID         uint64    `gorm:"primaryKey;column:id"`
+	ID         int64    `gorm:"primaryKey;column:id"`
 	Title      string    `gorm:"size:200;not null;column:title"`
 	Content    string    `gorm:"type:text;not null;column:content"`
-	AuthorID   uint64    `gorm:"not null;index;column:author_id"`
+	AuthorID   int64    `gorm:"not null;index;column:author_id"`
 	AuthorName string    `gorm:"size:100;not null;default:'';column:author_name"`
 	CreatedAt  time.Time `gorm:"column:created_at"`
 	UpdatedAt  time.Time `gorm:"column:updated_at"`
@@ -21,8 +21,8 @@ func (ArticleModel) TableName() string { return "articles" }
 // toEntity converts GORM model → domain entity.
 func (m *ArticleModel) toEntity() *articleEntity {
 	return &articleEntity{
-		ID: int64(m.ID), Title: m.Title, Content: m.Content,
-		AuthorID: int64(m.AuthorID), AuthorName: m.AuthorName,
+		ID: m.ID, Title: m.Title, Content: m.Content,
+		AuthorID: m.AuthorID, AuthorName: m.AuthorName,
 		CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
 	}
 }

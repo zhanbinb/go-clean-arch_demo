@@ -28,7 +28,7 @@ func NewArticleRepository(db *gorm.DB) *ArticleRepository {
 func (r *ArticleRepository) Save(ctx context.Context, a *article.Article) (*article.Article, error) {
 	m := &ArticleModel{
 		Title: a.Title, Content: a.Content,
-		AuthorID: uint64(a.AuthorID), AuthorName: a.AuthorName,
+		AuthorID: a.AuthorID, AuthorName: a.AuthorName,
 	}
 	if err := r.db.WithContext(ctx).Create(m).Error; err != nil {
 		return nil, fmt.Errorf("insert article: %w", err)
@@ -38,7 +38,7 @@ func (r *ArticleRepository) Save(ctx context.Context, a *article.Article) (*arti
 
 func (r *ArticleRepository) GetByID(ctx context.Context, id int64) (*article.Article, error) {
 	var m ArticleModel
-	err := r.db.WithContext(ctx).First(&m, uint64(id)).Error
+	err := r.db.WithContext(ctx).First(&m, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, article.ErrNotFound
@@ -94,7 +94,7 @@ func (r *ArticleRepository) Update(ctx context.Context, a *article.Article) erro
 }
 
 func (r *ArticleRepository) Delete(ctx context.Context, id int64) error {
-	res := r.db.WithContext(ctx).Delete(&ArticleModel{}, uint64(id))
+	res := r.db.WithContext(ctx).Delete(&ArticleModel{}, id)
 	if res.Error != nil {
 		return fmt.Errorf("delete article: %w", res.Error)
 	}

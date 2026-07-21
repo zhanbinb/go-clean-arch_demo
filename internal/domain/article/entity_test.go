@@ -19,6 +19,7 @@ func TestNewArticle_Valid(t *testing.T) {
 	assert.Equal(t, a.CreatedAt, a.UpdatedAt)
 }
 
+//nolint:goconst  // test input data intentionally repeated
 func TestNewArticle_Invalid(t *testing.T) {
 	tests := []struct {
 		name    string

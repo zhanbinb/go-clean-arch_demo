@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const statusKey = "status"
+
 // HealthHandler exposes liveness and readiness probes.
 type HealthHandler struct {
 	db *sql.DB
@@ -18,7 +20,7 @@ func NewHealthHandler(db *sql.DB) *HealthHandler { return &HealthHandler{db: db}
 
 // Liveness reports the process is alive. No dependency checks.
 func (h *HealthHandler) Liveness(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{statusKey: "ok"})
 }
 
 // Readiness pings the database; returns 503 if the dependency is down.
@@ -27,10 +29,10 @@ func (h *HealthHandler) Readiness(c *gin.Context) {
 	defer cancel()
 	if err := h.db.PingContext(ctx); err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"status": "unready",
+			statusKey: "unready",
 			"error":  err.Error(),
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "ready"})
+	c.JSON(http.StatusOK, gin.H{statusKey: "ready"})
 }

@@ -31,7 +31,7 @@ func (r *AuthorRepository) Save(ctx context.Context, a *author.Author) (*author.
 
 func (r *AuthorRepository) GetByID(ctx context.Context, id int64) (*author.Author, error) {
 	var m AuthorModel
-	err := r.db.WithContext(ctx).First(&m, uint64(id)).Error
+	err := r.db.WithContext(ctx).First(&m, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, author.ErrNotFound
@@ -68,7 +68,7 @@ func (r *AuthorRepository) Update(ctx context.Context, a *author.Author) error {
 }
 
 func (r *AuthorRepository) Delete(ctx context.Context, id int64) error {
-	res := r.db.WithContext(ctx).Delete(&AuthorModel{}, uint64(id))
+	res := r.db.WithContext(ctx).Delete(&AuthorModel{}, id)
 	if res.Error != nil {
 		return fmt.Errorf("delete author: %w", res.Error)
 	}
