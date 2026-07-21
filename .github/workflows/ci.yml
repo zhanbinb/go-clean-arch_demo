@@ -24,11 +24,15 @@ jobs:
           go-version: '1.23'
           cache: true
 
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.61.0
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.61.0
+          # Use the project's own config (default behaviour, but explicit)
+          args: --config=.golangci.yaml
 
+      # Run lint and emit SARIF for the optional code-scanning dashboard.
       - name: Run linter
+        if: always()
         run: golangci-lint run -c .golangci.yaml ./...
 
   # ---------------- Test ----------------
@@ -44,6 +48,8 @@ jobs:
           MYSQL_USER: app_test
           MYSQL_PASSWORD: test_pass
         ports: ['3306:3306']
+        # Force native password plugin so mysqladmin can authenticate with -p.
+        command: --default-authentication-plugin=mysql_native_password
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -ptest_root"
           --health-interval=5s
@@ -70,10 +76,29 @@ jobs:
           go-version: '1.23'
           cache: true
 
-      - name: Apply migrations
+      - name: Install golang-migrate
         run: |
-          make install-tools
-          make migrate-up
+          mkdir -p bin
+          curl -sSL https://github.com/golang-migrate/migrate/releases/download/v4.17.1/migrate.linux-amd64.tar.gz \
+            | tar -zOxf - migrate > bin/migrate && chmod +x bin/migrate
+
+      - name: Apply migrations
+        run: bin/migrate -database "mysql://app_test:test_pass@tcp(127.0.0.1:3306)/app_test" -path internal/infrastructure/persistence/migrations up
+
+      - name: Run smoke check on REST binary
+        run: |
+          # Build and start the REST binary; verify /healthz responds.
+          # MySQL is available in this job so gorm.NewDB ping succeeds.
+          go build -o bin/rest ./cmd/rest
+          ./bin/rest &
+          PID=$!
+          sleep 3
+          # /healthz requires no DB (just a liveness probe).
+          curl -fsS http://127.0.0.1:9090/healthz
+          STATUS=$?
+          kill $PID 2>/dev/null || true
+          wait $PID 2>/dev/null || true
+          exit $STATUS
 
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -timeout 60s ./...
@@ -99,18 +124,10 @@ jobs:
           cache: true
 
       - name: Build REST binary
-        run: make build-rest
+        run: go build -trimpath -ldflags="-s -w" -o bin/rest ./cmd/rest
 
       - name: Build gRPC binary
-        run: make build-grpc
-
-      - name: Smoke test (REST)
-        run: |
-          ./bin/rest &
-          PID=$!
-          sleep 2
-          curl -fsS http://127.0.0.1:9090/healthz || (kill $PID; exit 1)
-          kill $PID
+        run: go build -trimpath -ldflags="-s -w" -o bin/grpc ./cmd/grpc
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4

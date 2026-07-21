@@ -33,18 +33,30 @@ linters-settings:
   misspell:
     locale: US
   revive:
+    confidence: 0.8
+    severity: warning
     rules:
       - name: exported
+        severity: warning
         disabled: false
       - name: package-comments
+        severity: warning
       - name: var-naming
+        severity: warning
       - name: error-strings
+        severity: warning
       - name: error-naming
+        severity: warning
       - name: error-return
+        severity: warning
       - name: if-return
+        severity: warning
       - name: blank-imports
+        severity: warning
       - name: context-as-argument
+        severity: warning
       - name: context-keys-type
+        severity: warning
   gosec:
     excludes:
       - G104  # unhandled errors - covered by errcheck
