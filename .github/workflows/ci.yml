@@ -24,11 +24,19 @@ jobs:
           go-version: '1.23'
           cache: true
 
-      - uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.61.0
-        # Default action behaviour: golangci-lint run ./...
-        # .golangci.yaml at repo root is auto-detected.
+      # Install golangci-lint directly (bypassing the action — action v6 is no
+      # longer maintained as of 2026 and downloads have become flaky).
+      - name: Install golangci-lint
+        run: |
+          set -e
+          curl -sSfL -o /tmp/gci.tgz \
+            https://github.com/golangci/golangci-lint/releases/download/v1.61.0/golangci-lint-1.61.0-linux-amd64.tar.gz
+          mkdir -p /tmp/gci && tar -xzf /tmp/gci.tgz -C /tmp/gci
+          /tmp/gci/golangci-lint-1.61.0-linux-amd64/golangci-lint version
+          echo "/tmp/gci/golangci-lint-1.61.0-linux-amd64" >> "$GITHUB_PATH"
+
+      - name: Run linter
+        run: golangci-lint run -c .golangci.yaml ./...
 
   # ---------------- Test ----------------
   test:
