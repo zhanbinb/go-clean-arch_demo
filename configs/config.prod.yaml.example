@@ -1,0 +1,76 @@
+# =============================================================================
+# Production config overrides — copy to config.prod.yaml and edit
+# =============================================================================
+#
+# This file is merged on top of config.yaml when APP_ENV=prod.
+# In production the file should NOT be committed (it contains environment
+# specifics). Mount it as a secret / configmap.
+#
+# Usage:
+#     kubectl create secret generic app-config --from-file=config.prod.yaml
+#     # then mount into the pod at /app/configs/config.prod.yaml
+#
+# All values shown below are PRODUCTION-SAFE DEFAULTS; override per
+# environment as needed.
+# =============================================================================
+
+# Production: bind to all interfaces inside the container; ports come from config
+server:
+  http_port: 9090
+  grpc_port: 9091
+  # release = no debug logs, no Gin pprof, optimised
+  mode: release
+
+# Database connection details are usually injected as secrets in production,
+# so this file should ONLY contain non-secret defaults. Override secrets via env vars.
+database:
+  # DO NOT put real passwords here. Use APP_DATABASE_PASSWORD env var instead.
+  max_open_conns: 100
+  max_idle_conns: 20
+  conn_max_lifetime: 3600
+  log_level: error
+
+# JWT secret must come from APP_JWT_SECRET env var (NOT in this file).
+jwt:
+  ttl: 1h
+  refresh_ttl: 24h
+
+# Structured JSON logs for log aggregators (Loki / ELK / Datadog)
+log:
+  level: info
+  format: json
+
+# Strict CORS — never use "*" in production
+cors:
+  allow_origins:
+    - "https://app.example.com"
+    - "https://admin.example.com"
+  allow_methods:
+    - GET
+    - POST
+    - PUT
+    - PATCH
+    - DELETE
+    - OPTIONS
+  allow_headers:
+    - Origin
+    - Content-Type
+    - Authorization
+    - X-Request-ID
+  expose_headers:
+    - X-Request-ID
+  allow_credentials: true
+  max_age: 43200
+
+# More permissive rate limits at edge / per-user
+ratelimit:
+  enabled: true
+  rps: 50
+  burst: 100
+  cleanup_interval: 300
+  dimension: user
+
+# Swagger UI disabled in production by default
+swagger:
+  enabled: false
+  path: /swagger

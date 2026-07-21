@@ -27,6 +27,12 @@
 
 ## 快速开始
 
+> **第一次使用？** 复制 example 文件作为本地配置起点：
+> ```bash
+> cp .env.example .env
+> cp configs/config.local.yaml.example configs/config.local.yaml
+> # 编辑 .env 和 config.local.yaml 填入你的本地值
+> ```
 ```bash
 # 1. 安装工具链
 make install-tools

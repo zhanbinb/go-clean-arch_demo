@@ -6,7 +6,7 @@
 | [architecture.md](./architecture.md) | 分层架构、依赖方向、关键设计决策 |
 | [api.md](./api.md) | REST + gRPC 接口文档（含 curl / grpcurl 示例） |
 | [infrastructure.md](./infrastructure.md) | Makefile / Docker / air / golangci 等基础设施详解 |
-
+| [configuration.md](./configuration.md) | 配置层级、example 文件、环境变量参考 |
 ## 快速链接
 
 - REST API Swagger UI：启动后访问 `http://localhost:9090/swagger/index.html`
