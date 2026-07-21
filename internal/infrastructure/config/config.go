@@ -5,9 +5,11 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
@@ -95,6 +97,17 @@ type SwaggerConfig struct {
 // Load reads configs/config.yaml plus the optional config.<env>.yaml override,
 // then applies environment variables prefixed with APP_.
 func Load(env string) (*Config, error) {
+	// Load .env file into OS environment (best-effort).
+	// .env is gitignored; missing file is not fatal in production where
+	// env vars come from the container runtime.
+	if err := godotenv.Load(); err != nil {
+		// Only fail loudly if .env exists but is unreadable / malformed.
+		// A missing .env is silently ignored.
+		if _, statErr := stat(".env"); statErr == nil {
+			return nil, fmt.Errorf("load .env: %w", err)
+		}
+	}
+
 	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
@@ -139,4 +152,10 @@ func Load(env string) (*Config, error) {
 		cfg.JWT.RefreshTTL = 24 * time.Hour
 	}
 	return &cfg, nil
+}
+
+
+// stat wraps os.Stat so the import stays minimal in this file.
+func stat(path string) (os.FileInfo, error) {
+	return os.Stat(path)
 }

@@ -2,17 +2,40 @@
 
 ## 配置加载顺序
 
+优先级从低到高：
+
 ```
-优先级（从低到高）：
-1. configs/config.yaml                  ← 默认配置（已入库）
-2. configs/config.<APP_ENV>.yaml        ← 环境特定覆盖（可选）
-3. APP_<KEY> 环境变量                    ← 最高优先级
+1. configs/config.yaml              ← 默认配置（已入库）
+2. .env 文件                         ← 本地覆盖（gitignored，通过 godotenv 加载）
+3. configs/config.<APP_ENV>.yaml    ← 环境特定覆盖（已入库或 gitignored）
+4. APP_<KEY> shell 环境变量          ← 最高优先级（容器/CI 注入）
 ```
 
 `config.Load(env)` 实现：
-1. 读 `configs/config.yaml`（必需）
-2. 如果 `env != ""`，合并 `configs/config.<env>.yaml`（可选，缺失不报错）
-3. 启用 `APP_` 前缀的 env vars，自动覆盖 YAML
+1. `godotenv.Load()` 读 `.env` 进 os.Environ（缺失不报错，存在但解析失败才报错）
+2. Viper 读 `configs/config.yaml`（必需）
+3. 如果 `env != ""`，合并 `configs/config.<env>.yaml`（可选，缺失不报错）
+4. Viper `AutomaticEnv()` 启用 `APP_` 前缀的 env vars，从 os.Environ 读
+5. Unmarshal 到 Config 结构
+
+### 验证示例
+
+测试场景（`config.yaml` 默认 `jwt.ttl = 1h`）：
+
+| `.env` 内容 | shell 环境变量 | 实际生效 TTL | 来源 |
+|---|---|---|---|
+| （无） | （无） | 1h | config.yaml |
+| `APP_JWT_TTL=99h` | （无） | 99h | .env 覆盖 config.yaml |
+| `APP_JWT_TTL=99h` | `APP_JWT_TTL=5s` | 5s | shell 覆盖 .env |
+
+### .env 文件约定
+
+- 文件名：`.env`（无扩展）
+- 路径：项目根目录（与 `go.mod` 同级）
+- 格式：`KEY=VALUE`，每行一个，不支持引号嵌套或多行
+- 注释：以 `#` 开头
+- 缺失：`.env` 不存在时 godotenv 静默跳过（生产用环境变量即可）
+- 模板：`.env.example`（已入库，含完整字段说明）
 
 ## 文件清单
 
@@ -24,7 +47,7 @@
 | `configs/config.prod.yaml.example` | ✅ 入库 | 生产环境模板（不含真实 secret） |
 | `configs/config.prod.yaml` | ❌ 不存在 | 如需创建则用上面 example 复制 |
 | `.env.example` | ✅ 入库 | 所有可用的 `APP_*` 环境变量 |
-| `.env` | ❌ gitignore | 本地环境变量，**不**入库 |
+| `.env` | ❌ gitignore | 本地覆盖，godotenv 自动加载，**不**入库 |
 
 ## 快速开始
 
