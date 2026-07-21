@@ -1,11 +1,28 @@
-
-vendor/
-article_clean
-_*
-*.test
-.DS_Store
-engine
+# Build artifacts
 bin/
+engine
+app/
 *.out
-tmp_app/
+coverage.out
+gotestsum.json.out
+
+# Local environment / secrets
 .env
+.env.local
+configs/config.local.yaml
+
+# Generated code
+api/gen/
+docs/swagger/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Air hot-reload temp
+tmp/
+
+# Vendor (we use Go modules, not vendoring)
+vendor/
