@@ -53,5 +53,5 @@ func TestSignRefresh(t *testing.T) {
 	require.NoError(t, err)
 	claims, err := m.Parse(tok)
 	require.NoError(t, err)
-	assert.True(t, claims.ExpiresAt.Time.Sub(claims.IssuedAt.Time) > time.Hour)
+	assert.True(t, claims.ExpiresAt.Sub(claims.IssuedAt.Time) > time.Hour)
 }

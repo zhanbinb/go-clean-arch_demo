@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	promcollectors "github.com/prometheus/client_golang/prometheus/collectors"
 	gormlib "gorm.io/gorm"
 
 	"github.com/zhanbinb/go-clean-arch_demo/internal/application/article"
@@ -77,8 +78,8 @@ func New(ctx context.Context, env string) (*Deps, error) {
 	}
 
 	promReg := prometheus.NewRegistry()
-	promReg.MustRegister(prometheus.NewGoCollector())
-	promReg.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+	promReg.MustRegister(promcollectors.NewGoCollector())
+	promReg.MustRegister(promcollectors.NewProcessCollector(promcollectors.ProcessCollectorOpts{}))
 
 	// Repositories
 	articleRepo := persist.NewArticleRepository(db)
