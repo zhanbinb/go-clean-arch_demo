@@ -4,7 +4,6 @@ run:
   tests: true
 
 linters:
-  disable-all: true
   enable:
     - errcheck
     - goconst
@@ -15,7 +14,6 @@ linters:
     - misspell
     - revive
     - staticcheck
-    - typecheck
     - unconvert
     - unparam
     - unused
