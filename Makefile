@@ -1,147 +1,175 @@
-# Database
-MYSQL_USER ?= user
-MYSQL_PASSWORD ?= password
-MYSQL_ADDRESS ?= 127.0.0.1:3306
-MYSQL_DATABASE ?= article
+# Go Clean Architecture Demo - v2 Enterprise Stack
+# Build / lint / test / proto / migrate orchestration.
 
-# Exporting bin folder to the path for makefile
-export PATH   := $(PWD)/bin:$(PATH)
-# Default Shell
-export SHELL  := bash
-# Type of OS: Linux or Darwin.
-export OSTYPE := $(shell uname -s | tr A-Z a-z)
-export ARCH := $(shell uname -m)
+# ---- Variables ----------------------------------------------------------------
+BIN_DIR     := bin
+APP_NAME    := go-clean-arch-demo
+GO          := go
+GOFLAGS     := -trimpath
+LDFLAGS     := -s -w
+PKG         := ./...
 
+# Tooling versions (downloaded by `make install-tools`)
+GOLANGCI_VERSION := 1.61.0
+SWAG_VERSION     := 1.16.3
+MIGRATE_VERSION  := 4.17.1
+BUF_VERSION      := 1.34.0
 
+OS := $(shell uname -s | tr A-Z a-z)
+ARCH := $(shell uname -m)
+ifeq ($(ARCH),x86_64)
+	ARCH := amd64
+endif
+ifeq ($(ARCH),aarch64)
+	ARCH := arm64
+endif
 
-# --- Tooling & Variables ----------------------------------------------------------------
-include ./misc/make/tools.Makefile
-include ./misc/make/help.Makefile
+# ---- Default target -----------------------------------------------------------
+.PHONY: help
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-# ~~~ Development Environment ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ---- Build --------------------------------------------------------------------
+.PHONY: build
+build: build-rest build-grpc ## Build both REST and gRPC binaries
 
-up: dev-env dev-air             ## Startup / Spinup Docker Compose and air
-down: docker-stop               ## Stop Docker
-destroy: docker-teardown clean  ## Teardown (removes volumes, tmp files, etc...)
+.PHONY: build-rest
+build-rest: ## Build the REST server binary
+	@ mkdir -p $(BIN_DIR)
+	$(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/rest ./cmd/rest
 
-install-deps: migrate air gotestsum tparse mockery ## Install Development Dependencies (localy).
-deps: $(MIGRATE) $(AIR) $(GOTESTSUM) $(TPARSE) $(MOCKERY) $(GOLANGCI) ## Checks for Global Development Dependencies.
-deps:
-	@echo "Required Tools Are Available"
+.PHONY: build-grpc
+build-grpc: ## Build the gRPC server binary
+	@ mkdir -p $(BIN_DIR)
+	$(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/grpc ./cmd/grpc
 
-dev-env: ## Bootstrap Environment (with a Docker-Compose help).
-	@ docker-compose up -d --build mysql
+.PHONY: build-race
+build-race: ## Build both binaries with -race flag
+	$(GO) build $(GOFLAGS) -race -o $(BIN_DIR)/rest ./cmd/rest
+	$(GO) build $(GOFLAGS) -race -o $(BIN_DIR)/grpc ./cmd/grpc
 
-dev-env-test: dev-env ## Run application (within a Docker-Compose help)
-	@ $(MAKE) image-build
-	docker-compose up web
+# ---- Test ---------------------------------------------------------------------
+.PHONY: test
+test: ## Run unit tests with race detector + coverage
+	$(GO) test -race -coverprofile=coverage.out -timeout 30s $(PKG)
 
-dev-air: $(AIR) ## Starts AIR ( Continuous Development app).
-	air
+.PHONY: test-cover
+test-cover: test ## Run tests and open HTML coverage report
+	$(GO) tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report: coverage.html"
 
-docker-stop:
-	@ docker-compose down
+# ---- Lint ---------------------------------------------------------------------
+.PHONY: lint
+lint: golangci ## Run golangci-lint with .golangci.yaml
+	$(BIN_DIR)/golangci-lint version
+	$(BIN_DIR)/golangci-lint run -c .golangci.yaml $(PKG)
 
-docker-teardown:
-	@ docker-compose down --remove-orphans -v
+# ---- Codegen ------------------------------------------------------------------
+.PHONY: proto
+proto: buf ## Generate protobuf Go code via buf
+	$(BIN_DIR)/buf generate
 
-# ~~~ Code Actions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.PHONY: swagger
+swagger: swag ## Generate Swagger OpenAPI docs from annotations
+	$(BIN_DIR)/swag init -g cmd/rest/main.go -o docs/swagger --parseDependency --parseInternal
 
-lint: $(GOLANGCI) ## Runs golangci-lint with predefined configuration
-	@echo "Applying linter"
-	golangci-lint version
-	golangci-lint run -c .golangci.yaml ./...
+.PHONY: mocks
+mocks: ## Generate mocks for testing (mockery)
+	$(GO) generate ./...
 
-# -trimpath - will remove the filepathes from the reports, good to same money on network trafic,
-#             focus on bug reports, and find issues fast.
-# - race    - adds a racedetector, in case of racecondition, you can catch report with sentry.
-#             https://golang.org/doc/articles/race_detector.html
-#
-# todo(butuzov): add additional flags to compiler to have an `version` flag.
-build: ## Builds binary
-	@ printf "Building aplication... "
-	@ go build \
-		-trimpath  \
-		-o engine \
-		./app/
-	@ echo "done"
+# ---- Database migrations ------------------------------------------------------
+MIGRATIONS_DIR := internal/infrastructure/persistence/migrations
+DB_DSN ?= mysql://$(DB_USER):$(DB_PASS)@tcp($(DB_HOST):$(DB_PORT))/$(DB_NAME)
 
+.PHONY: migrate-up
+migrate-up: migrate ## Apply all pending migrations
+	$(BIN_DIR)/migrate -database $(DB_DSN) -path $(MIGRATIONS_DIR) up
 
-build-race: ## Builds binary (with -race flag)
-	@ printf "Building aplication with race flag... "
-	@ go build \
-		-trimpath  \
-		-race      \
-		-o engine \
-		./app/
-	@ echo "done"
+.PHONY: migrate-down
+migrate-down: migrate ## Roll back the last migration
+	$(BIN_DIR)/migrate -database $(DB_DSN) -path $(MIGRATIONS_DIR) down 1
 
+.PHONY: migrate-create
+migrate-create: migrate ## Create a new migration pair (NAME=name)
+	@read -p "Migration name: " name; \
+	$(BIN_DIR)/migrate create -ext sql -dir $(MIGRATIONS_DIR) $${name}
 
-go-generate: $(MOCKERY) ## Runs go generte ./...
-	go generate ./...
+# ---- Dev environment ----------------------------------------------------------
+.PHONY: dev-env
+dev-env: ## Start MySQL via docker-compose
+	docker compose -f deployments/docker-compose.yaml up -d mysql
 
+.PHONY: dev-air
+dev-air: air ## Run with hot reload (requires MySQL already up)
+	$(BIN_DIR)/air -c .air.toml
 
-TESTS_ARGS := --format testname --jsonfile gotestsum.json.out
-TESTS_ARGS += --max-fails 2
-TESTS_ARGS += -- ./...
-TESTS_ARGS += -test.parallel 2
-TESTS_ARGS += -test.count    1
-TESTS_ARGS += -test.failfast
-TESTS_ARGS += -test.coverprofile   coverage.out
-TESTS_ARGS += -test.timeout        5s
-TESTS_ARGS += -race
+.PHONY: run-rest
+run-rest: build-rest ## Build and run REST server
+	./$(BIN_DIR)/rest
 
-tests: $(GOTESTSUM)
-	@ gotestsum $(TESTS_ARGS) -short
+.PHONY: run-grpc
+run-grpc: build-grpc ## Build and run gRPC server
+	./$(BIN_DIR)/grpc
 
-tests-complete: tests $(TPARSE) ## Run Tests & parse details
-	@cat gotestsum.json.out | $(TPARSE) -all -notests
+# ---- Docker -------------------------------------------------------------------
+.PHONY: image-build
+image-build: ## Build Docker image
+	docker build -f deployments/Dockerfile -t $(APP_NAME):latest .
 
-# ~~~ Docker Build ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.PHONY: image-run
+image-run: image-build ## Build and run full stack via docker-compose
+	docker compose -f deployments/docker-compose.yaml up --build
 
-.ONESHELL:
-image-build:
-	@ echo "Docker Build"
-	@ DOCKER_BUILDKIT=0 docker build \
-		--file Dockerfile \
-		--tag go-clean-arch \
-			.
+# ---- Clean --------------------------------------------------------------------
+.PHONY: clean
+clean: clean-artifacts clean-bin ## Remove build artifacts and bin/
 
-# Commenting this as this not relevant for the project, we load the DB data from the SQL file.
-# please refer this when introducing the database schema migrations.
+.PHONY: clean-artifacts
+clean-artifacts: ## Remove coverage / output files
+	rm -f coverage.out coverage.html
 
-# # ~~~ Database Migrations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
+.PHONY: clean-bin
+clean-bin: ## Remove bin/ directory
+	rm -rf $(BIN_DIR)
 
-# MYSQL_DSN := "mysql://$(MYSQL_USER):$(MYSQL_PASSWORD)@tcp($(MYSQL_ADDRESS))/$(MYSQL_DATABASE)"
+# ---- Tool installation (local) ------------------------------------------------
+.PHONY: install-tools
+install-tools: golangci swag migrate buf air ## Install all dev tools to bin/
 
-# migrate-up: $(MIGRATE) ## Apply all (or N up) migrations.
-# 	@ read -p "How many migration you wants to perform (default value: [all]): " N; \
-# 	migrate  -database $(MYSQL_DSN) -path=misc/migrations up ${NN}
+.PHONY: golangci
+golangci: $(BIN_DIR)/golangci-lint
+$(BIN_DIR)/golangci-lint:
+	@ mkdir -p $(BIN_DIR)
+	curl -sSL https://github.com/golangci/golangci-lint/releases/download/v$(GOLANGCI_VERSION)/golangci-lint-$(GOLANGCI_VERSION)-$(OS)-$(ARCH).tar.gz | tar -zOxf - golangci-lint-$(GOLANGCI_VERSION)-$(OS)-$(ARCH)/golangci-lint > $@ && chmod +x $@
 
-# .PHONY: migrate-down
-# migrate-down: $(MIGRATE) ## Apply all (or N down) migrations.
-# 	@ read -p "How many migration you wants to perform (default value: [all]): " N; \
-# 	migrate  -database $(MYSQL_DSN) -path=misc/migrations down ${NN}
+.PHONY: swag
+swag: $(BIN_DIR)/swag
+$(BIN_DIR)/swag:
+	@ mkdir -p $(BIN_DIR)
+	GOBIN=$(PWD)/$(BIN_DIR) $(GO) install github.com/swaggo/swag/cmd/swag@v$(SWAG_VERSION)
 
-# .PHONY: migrate-drop
-# migrate-drop: $(MIGRATE) ## Drop everything inside the database.
-# 	migrate  -database $(MYSQL_DSN) -path=misc/migrations drop
+.PHONY: migrate
+migrate: $(BIN_DIR)/migrate
+$(BIN_DIR)/migrate:
+	@ mkdir -p $(BIN_DIR)
+	curl -sSL https://github.com/golang-migrate/migrate/releases/download/v$(MIGRATE_VERSION)/migrate.$(OS)-$(ARCH).tar.gz | tar -zOxf - migrate > $@ && chmod +x $@
 
-# .PHONY: migrate-create
-# migrate-create: $(MIGRATE) ## Create a set of up/down migrations with a specified name.
-# 	@ read -p "Please provide name for the migration: " Name; \
-# 	migrate create -ext sql -dir misc/migrations $${Name}
+.PHONY: buf
+buf: $(BIN_DIR)/buf
+$(BIN_DIR)/buf:
+	@ mkdir -p $(BIN_DIR)
+	curl -sSL https://github.com/bufbuild/buf/releases/download/v$(BUF_VERSION)/buf-$(OS)-$(ARCH) > $@ && chmod +x $@
 
-# ~~~ Cleans ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.PHONY: air
+air: $(BIN_DIR)/air
+$(BIN_DIR)/air:
+	@ mkdir -p $(BIN_DIR)
+	GOBIN=$(PWD)/$(BIN_DIR) $(GO) install github.com/air-verse/air@v$(AIR_VERSION)
 
-clean: clean-artifacts clean-docker
-
-clean-artifacts: ## Removes Artifacts (*.out)
-	@printf "Cleanning artifacts... "
-	@rm -f *.out
-	@echo "done."
-
-
-clean-docker: ## Removes dangling docker images
-	@ docker image prune -f
+# Default env vars for migrate-* targets (override on command line)
+DB_HOST ?= 127.0.0.1
+DB_PORT ?= 3306
+DB_USER ?= app
+DB_PASS ?= app
+DB_NAME ?= article
+AIR_VERSION := 1.52.0

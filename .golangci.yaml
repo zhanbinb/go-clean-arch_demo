@@ -1,48 +1,21 @@
-linters-settings:
-  govet:
-    check-shadowing: true
-    settings:
-      printf:
-        funcs:
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
-  gocyclo:
-    min-complexity: 50
-  maligned:
-    suggest-new: true
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  misspell:
-    locale: US
-  revive:
-    confidence: 0.8
-  lll:
-    line-length: 160
-    # tab width in spaces. Default to 1.
-    tab-width: 1
-  funlen:
-    lines: 150
-    statements: 80
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - api/gen
+    - docs/swagger
+    - tmp
+    - bin
 
 linters:
-  # please, do not use `enable-all`: it's deprecated and will be removed soon.
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
   enable:
     - errcheck
-    - funlen
     - goconst
     - gocyclo
     - gosec
-    - gosimple
     - govet
     - ineffassign
-    - lll
     - misspell
     - revive
     - staticcheck
@@ -51,19 +24,35 @@ linters:
     - unparam
     - unused
 
-  # don't enable:
-  # - gochecknoglobals
-  # - gocognit
-  # - godox
-  # - maligned
-  # - prealloc
-
-run:
-  skip-dirs:
-    # - test/testdata_etc
-  skip-files:
-    - ".*_test\\.go$"
+linters-settings:
+  gocyclo:
+    min-complexity: 20
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  misspell:
+    locale: US
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+      - name: package-comments
+      - name: var-naming
+      - name: error-strings
+      - name: error-naming
+      - name: error-return
+      - name: if-return
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+  gosec:
+    excludes:
+      - G104  # unhandled errors - covered by errcheck
 
 issues:
   exclude-rules:
-  #
+    - path: _test\.go
+      linters:
+        - gosec
+        - goconst
+  max-same-issues: 0
