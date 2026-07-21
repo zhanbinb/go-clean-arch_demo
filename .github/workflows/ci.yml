@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**', 'v2/**']
+  pull_request:
+    branches: [main, 'feat/**', 'v2/**']
+
+# Cancel in-progress runs when a new commit lands on the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------- Lint ----------------
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.61.0
+
+      - name: Run linter
+        run: golangci-lint run -c .golangci.yaml ./...
+
+  # ---------------- Test ----------------
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.3
+        env:
+          MYSQL_ROOT_PASSWORD: test_root
+          MYSQL_DATABASE: app_test
+          MYSQL_USER: app_test
+          MYSQL_PASSWORD: test_pass
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -ptest_root"
+          --health-interval=5s
+          --health-retries=10
+
+    env:
+      APP_ENV: ci
+      APP_DATABASE_HOST: 127.0.0.1
+      APP_DATABASE_PORT: 3306
+      APP_DATABASE_USER: app_test
+      APP_DATABASE_PASSWORD: test_pass
+      APP_DATABASE_NAME: app_test
+      APP_DATABASE_MAX_OPEN_CONNS: 10
+      APP_DATABASE_MAX_IDLE_CONNS: 2
+      APP_JWT_SECRET: test-jwt-secret-must-be-at-least-16-bytes
+      APP_LOG_LEVEL: error
+      APP_LOG_FORMAT: json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Apply migrations
+        run: |
+          make install-tools
+          make migrate-up
+
+      - name: Run tests
+        run: go test -race -coverprofile=coverage.out -timeout 60s ./...
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
+
+  # ---------------- Build ----------------
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Build REST binary
+        run: make build-rest
+
+      - name: Build gRPC binary
+        run: make build-grpc
+
+      - name: Smoke test (REST)
+        run: |
+          ./bin/rest &
+          PID=$!
+          sleep 2
+          curl -fsS http://127.0.0.1:9090/healthz || (kill $PID; exit 1)
+          kill $PID
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: bin/
+
+  # ---------------- Docker image ----------------
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deployments/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
