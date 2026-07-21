@@ -31,7 +31,7 @@ func (r *UserRepository) Save(ctx context.Context, u *user.User) (*user.User, er
 
 func (r *UserRepository) GetByID(ctx context.Context, id int64) (*user.User, error) {
 	var m UserModel
-	err := r.db.WithContext(ctx).First(&m, uint64(id)).Error
+	err := r.db.WithContext(ctx).First(&m, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, user.ErrNotFound
@@ -71,7 +71,7 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 }
 
 func (r *UserRepository) Delete(ctx context.Context, id int64) error {
-	res := r.db.WithContext(ctx).Delete(&UserModel{}, uint64(id))
+	res := r.db.WithContext(ctx).Delete(&UserModel{}, id)
 	if res.Error != nil {
 		return fmt.Errorf("delete user: %w", res.Error)
 	}
