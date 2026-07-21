@@ -42,3 +42,6 @@ tmp/
 
 # Local install-tools bin/
 bin/
+
+# Exception: the swagger stub is required for `go build ./cmd/rest`
+!docs/swagger/doc.go
