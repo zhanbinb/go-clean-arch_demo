@@ -1,39 +1,43 @@
-# Config file for [Air](https://github.com/cosmtrek/air) in TOML format
+# Air hot-reload configuration for Go.
+# https://github.com/air-verse/air
 
-# Working directory
-# . or absolute path, please note that the directories following must be under root
 root = "."
-tmp_dir = "tmp_app"
+test_data_dir = "testdata"
+tmp_dir = "tmp"
 
 [build]
-# Just plain old shell command. You could use `make` as well.
-cmd = "go build -o ./tmp_app/app/engine ./app/."
-# Binary file yields from `cmd`.
-bin = "tmp_app/app"
-# Customize binary.
-full_bin = "./tmp_app/app/engine"
-# This log file places in your tmp_dir.
-log = "air_errors.log"
-# Watch these filename extensions.
-include_ext = ["go", "yaml", "toml"]
-# Exclude specific regular expressions.
-exclude_regex = ["_test\\.go"]
-# Ignore these filename extensions or directories.
-exclude_dir = ["tmp_app", "tmp"]
-# It's not necessary to trigger build each time file changes if it's too frequent.
-delay = 1000 # ms
-
-[log]
-# Show log time
-time = true
+  args_bin = []
+  bin = "./tmp/rest"
+  cmd = "go build -trimpath -o ./tmp/rest ./cmd/rest"
+  delay = 1000
+  exclude_dir = ["assets", "tmp", "vendor", "docs/swagger", "api/gen"]
+  exclude_file = []
+  exclude_regex = ["_test\\.go"]
+  exclude_unchanged = true
+  follow_symlink = false
+  full_bin = ""
+  include_dir = ["cmd", "internal", "pkg"]
+  include_ext = ["go", "yaml", "yml", "toml"]
+  kill_delay = "1s"
+  log = "build-errors.log"
+  send_interrupt = false
+  stop_on_error = true
 
 [color]
-# Customize each part's color. If no color found, use the raw app log.
-main = "magenta"
-watcher = "cyan"
-build = "yellow"
-runner = "green"
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  silent = false
+  time = true
 
 [misc]
-# Delete tmp directory on exit
-clean_on_exit = true
+  clean_on_exit = true
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true

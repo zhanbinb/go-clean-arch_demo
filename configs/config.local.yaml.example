@@ -1,0 +1,50 @@
+# =============================================================================
+# Local config overrides — copy to config.local.yaml and edit
+# =============================================================================
+#
+# This file is merged on top of config.yaml when APP_ENV=local.
+# It is gitignored so each developer can have their own overrides.
+#
+# Usage:
+#     cp configs/config.local.yaml.example configs/config.local.yaml
+#     # edit values as needed
+#     APP_ENV=local ./bin/rest
+#
+# All keys are OPTIONAL — only include the ones you want to override.
+# =============================================================================
+
+# Override the default server port (e.g. when 9090 is taken on your machine)
+# server:
+#   http_port: 19090
+#   grpc_port: 19091
+#   mode: debug
+
+# Override database connection (e.g. when MySQL runs in Docker on a different port)
+# database:
+#   host: 127.0.0.1
+#   port: 3306
+#   user: app
+#   password: app
+#   name: article
+
+# Use a per-developer JWT secret so tokens don't collide across team members
+# jwt:
+#   secret: "local-dev-secret-only-please-do-not-use-in-prod"
+#   ttl: 24h
+#   refresh_ttl: 168h
+
+# Verbose logging during development
+# log:
+#   level: debug
+#   format: console
+
+# Permissive CORS for local frontend dev (e.g. http://localhost:3000)
+# cors:
+#   allow_origins:
+#     - "http://localhost:3000"
+#     - "http://localhost:5173"
+#   allow_credentials: true
+
+# Disable rate limit while iterating locally
+# ratelimit:
+#   enabled: false

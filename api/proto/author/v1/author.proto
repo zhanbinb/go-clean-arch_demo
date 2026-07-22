@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package author.v1;
+
+option go_package = "github.com/zhanbinb/go-clean-arch_demo/api/gen/go/author/v1;authorv1";
+
+// AuthorService — gRPC stub (not fully implemented in v2).
+service AuthorService {
+  rpc GetAuthor(GetAuthorRequest) returns (GetAuthorResponse);
+}
+
+message GetAuthorRequest { int64 id = 1; }
+message GetAuthorResponse { Author author = 1; }
+
+message Author {
+  int64 id = 1;
+  string name = 2;
+  string email = 3;
+  int64 created_at = 4;
+  int64 updated_at = 5;
+}

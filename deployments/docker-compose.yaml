@@ -1,0 +1,61 @@
+services:
+  mysql:
+    image: mysql:8.3
+    container_name: ${APP_NAME:-go-clean-arch}-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${DB_NAME:-article}
+      MYSQL_USER: ${DB_USER:-app}
+      MYSQL_PASSWORD: ${DB_PASS:-app}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      timeout: 5s
+      retries: 10
+
+  rest:
+    image: ${APP_NAME:-go-clean-arch}:latest
+    container_name: ${APP_NAME:-go-clean-arch}-rest
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: local
+      APP_DATABASE_HOST: mysql
+      APP_DATABASE_PORT: 3306
+      APP_DATABASE_USER: ${DB_USER:-app}
+      APP_DATABASE_PASSWORD: ${DB_PASS:-app}
+      APP_DATABASE_NAME: ${DB_NAME:-article}
+      APP_SERVER_MODE: release
+      APP_LOG_FORMAT: json
+    ports:
+      - "${REST_PORT:-9090}:9090"
+
+  grpc:
+    image: ${APP_NAME:-go-clean-arch}:latest
+    container_name: ${APP_NAME:-go-clean-arch}-grpc
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: local
+      APP_DATABASE_HOST: mysql
+      APP_DATABASE_PORT: 3306
+      APP_DATABASE_USER: ${DB_USER:-app}
+      APP_DATABASE_PASSWORD: ${DB_PASS:-app}
+      APP_DATABASE_NAME: ${DB_NAME:-article}
+      APP_SERVER_MODE: release
+      APP_LOG_FORMAT: json
+    ports:
+      - "${GRPC_PORT:-9091}:9091"
+    entrypoint: ["/app/grpc"]
+
+volumes:
+  mysql-data:

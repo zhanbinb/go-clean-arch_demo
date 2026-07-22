@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package article.v1;
+
+option go_package = "github.com/zhanbinb/go-clean-arch_demo/api/gen/go/article/v1;articlev1";
+
+// ArticleService is the gRPC entry point for the article aggregate.
+// Only GetArticle is fully implemented in v2; the others are reserved.
+service ArticleService {
+  rpc GetArticle(GetArticleRequest) returns (GetArticleResponse);
+  // Reserved for v3
+  rpc CreateArticle(CreateArticleRequest) returns (CreateArticleResponse);
+  rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse);
+}
+
+message GetArticleRequest {
+  int64 id = 1;
+}
+
+message GetArticleResponse {
+  Article article = 1;
+}
+
+message CreateArticleRequest {
+  string title = 1;
+  string content = 2;
+  int64 author_id = 3;
+}
+
+message CreateArticleResponse {
+  Article article = 1;
+}
+
+message ListArticlesRequest {
+  string cursor = 1;
+  int32 limit = 2;
+}
+
+message ListArticlesResponse {
+  repeated Article items = 1;
+  string next_cursor = 2;
+}
+
+message Article {
+  int64 id = 1;
+  string title = 2;
+  string content = 3;
+  int64 author_id = 4;
+  string author_name = 5;
+  int64 created_at = 6;  // unix seconds
+  int64 updated_at = 7;  // unix seconds
+}

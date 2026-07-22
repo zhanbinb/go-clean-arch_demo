@@ -1,2 +1,47 @@
+# Build artifacts
+bin/
 engine
 *.out
+coverage.out
+gotestsum.json.out
+tmp_app/
+
+# Local secrets (NEVER bake into image)
+.env
+.env.local
+.env.*
+configs/config.local.yaml
+
+# Generated code (rebuild during image build)
+api/gen/
+docs/swagger/
+
+# VCS metadata (huge!)
+.git/
+.gitignore
+.github/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Docs and tests (not needed at runtime)
+docs/
+README.md
+LICENSE
+*.md
+
+# Test data
+testdata/
+*_test.go
+
+# Air tmp
+tmp/
+
+# Local install-tools bin/
+bin/
+
+# Exception: the swagger stub is required for `go build ./cmd/rest`
+!docs/swagger/doc.go
