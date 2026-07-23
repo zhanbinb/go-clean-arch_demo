@@ -12,7 +12,6 @@ gotestsum.json.out
 configs/config.local.yaml
 
 # Generated code
-api/gen/
 docs/swagger/docs.go
 docs/swagger/swagger.json
 docs/swagger/swagger.yaml

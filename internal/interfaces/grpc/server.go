@@ -4,6 +4,7 @@ package grpc
 import (
 	"google.golang.org/grpc"
 
+	articlev1 "github.com/zhanbinb/go-clean-arch_demo/api/gen/go/article/v1"
 	"github.com/zhanbinb/go-clean-arch_demo/internal/application/article"
 	articlegrpc "github.com/zhanbinb/go-clean-arch_demo/internal/interfaces/grpc/handler"
 )
@@ -23,7 +24,8 @@ func NewHandlers(articleSvc *article.Service) *Handlers {
 // Register attaches all gRPC service implementations to the server.
 //
 // Once `make proto` runs, replace this with the generated
-//   articlev1.RegisterArticleServiceServer(s, h.Article)
+//
+//	articlev1.RegisterArticleServiceServer(s, h.Article)
 func (h *Handlers) Register(s *grpc.Server) {
-	s.RegisterService(&articlegrpc.ArticleService_ServiceDesc, h.Article)
+	articlev1.RegisterArticleServiceServer(s, h.Article)
 }

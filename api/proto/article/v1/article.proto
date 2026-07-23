@@ -11,6 +11,7 @@ service ArticleService {
   // Reserved for v3
   rpc CreateArticle(CreateArticleRequest) returns (CreateArticleResponse);
   rpc ListArticles(ListArticlesRequest) returns (ListArticlesResponse);
+  rpc GetArticleTitle(GetArticleTitleRequest) returns (GetArticleTitleResponse);
 }
 
 message GetArticleRequest {
@@ -40,6 +41,17 @@ message ListArticlesResponse {
   repeated Article items = 1;
   string next_cursor = 2;
 }
+
+message GetArticleTitleRequest {
+  int64 id = 1;
+}
+
+message GetArticleTitleResponse {
+  int64 id = 1;
+  string title = 2;
+}
+
+
 
 message Article {
   int64 id = 1;

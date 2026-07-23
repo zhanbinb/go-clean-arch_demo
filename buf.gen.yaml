@@ -1,10 +1,12 @@
 version: v1
 plugins:
   - name: go
-    out: gen/go
+    out: .
     opt:
-      - paths=source_relative
+      #  - paths=source_relative
+         - module=github.com/zhanbinb/go-clean-arch_demo
   - name: go-grpc
-    out: gen/go
+    out: .
     opt:
-      - paths=source_relative
+      #  - paths=source_relative
+         - module=github.com/zhanbinb/go-clean-arch_demo
