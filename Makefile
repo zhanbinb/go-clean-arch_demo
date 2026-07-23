@@ -80,14 +80,16 @@ mocks: ## Generate mocks for testing (mockery)
 # ---- Database migrations ------------------------------------------------------
 MIGRATIONS_DIR := internal/infrastructure/persistence/migrations
 DB_DSN ?= mysql://$(DB_USER):$(DB_PASS)@tcp($(DB_HOST):$(DB_PORT))/$(DB_NAME)
+# Go-style DSN (no mysql:// scheme) for tooling that expects it.
+DB_DSN_GO ?= $(DB_USER):$(DB_PASS)@tcp($(DB_HOST):$(DB_PORT))/$(DB_NAME)
 
 .PHONY: migrate-up
 migrate-up: migrate ## Apply all pending migrations
-	$(BIN_DIR)/migrate -database $(DB_DSN) -path $(MIGRATIONS_DIR) up
+	$(BIN_DIR)/migrate -database "$(DB_DSN)" -path $(MIGRATIONS_DIR) up
 
 .PHONY: migrate-down
 migrate-down: migrate ## Roll back the last migration
-	$(BIN_DIR)/migrate -database $(DB_DSN) -path $(MIGRATIONS_DIR) down 1
+	$(BIN_DIR)/migrate -database "$(DB_DSN)" -path $(MIGRATIONS_DIR) down 1
 
 .PHONY: migrate-create
 migrate-create: migrate ## Create a new migration pair (NAME=foo_bar). Falls back to interactive prompt if NAME unset.
@@ -177,4 +179,4 @@ DB_PORT  ?= $(or $(APP_DATABASE_PORT),3306)
 DB_USER  ?= $(or $(APP_DATABASE_USER),app)
 DB_PASS  ?= $(or $(APP_DATABASE_PASSWORD),app)
 DB_NAME  ?= $(or $(APP_DATABASE_NAME),article)
-AIR_VERSION := 1.52.0
+AIR_VERSION := 1.63.0
