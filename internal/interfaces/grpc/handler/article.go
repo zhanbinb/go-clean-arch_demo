@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	articlev1 "github.com/zhanbinb/go-clean-arch_demo/api/gen/go/article/v1"
 	"github.com/zhanbinb/go-clean-arch_demo/internal/application/article"
 	"github.com/zhanbinb/go-clean-arch_demo/pkg/errcode"
 )
@@ -84,7 +85,7 @@ func (UnimplementedArticleServiceServer) ListArticles(context.Context, *ListArti
 
 // ArticleServer implements ArticleServiceServer backed by the article use case.
 type ArticleServer struct {
-	UnimplementedArticleServiceServer
+	articlev1.UnimplementedArticleServiceServer
 	svc *article.Service
 }
 
@@ -94,7 +95,7 @@ func NewArticleServer(svc *article.Service) *ArticleServer {
 }
 
 // GetArticle returns a single article.
-func (s *ArticleServer) GetArticle(ctx context.Context, req *GetArticleRequest) (*GetArticleResponse, error) {
+func (s *ArticleServer) GetArticle(ctx context.Context, req *articlev1.GetArticleRequest) (*articlev1.GetArticleResponse, error) {
 	dto, err := s.svc.GetByID(ctx, req.Id)
 	if err != nil {
 		e := errcode.FromError(err)
@@ -103,11 +104,11 @@ func (s *ArticleServer) GetArticle(ctx context.Context, req *GetArticleRequest) 
 		}
 		return nil, status.Error(codes.Internal, e.Message)
 	}
-	return &GetArticleResponse{Article: dtoToProto(dto)}, nil
+	return &articlev1.GetArticleResponse{Article: dtoToProto(dto)}, nil
 }
 
 // CreateArticle creates a new article.
-func (s *ArticleServer) CreateArticle(ctx context.Context, req *CreateArticleRequest) (*CreateArticleResponse, error) {
+func (s *ArticleServer) CreateArticle(ctx context.Context, req *articlev1.CreateArticleRequest) (*articlev1.CreateArticleResponse, error) {
 	dto, err := s.svc.Create(ctx, article.CreateInput{
 		Title: req.Title, Content: req.Content, AuthorID: req.AuthorId,
 	})
@@ -120,26 +121,51 @@ func (s *ArticleServer) CreateArticle(ctx context.Context, req *CreateArticleReq
 			return nil, status.Error(codes.Internal, e.Message)
 		}
 	}
-	return &CreateArticleResponse{Article: dtoToProto(dto)}, nil
+	return &articlev1.CreateArticleResponse{Article: dtoToProto(dto)}, nil
 }
 
 // ListArticles returns a page of articles.
-func (s *ArticleServer) ListArticles(ctx context.Context, req *ListArticlesRequest) (*ListArticlesResponse, error) {
+func (s *ArticleServer) ListArticles(ctx context.Context, req *articlev1.ListArticlesRequest) (*articlev1.ListArticlesResponse, error) {
 	res, err := s.svc.List(ctx, req.Cursor, int(req.Limit))
 	if err != nil {
 		e := errcode.FromError(err)
 		return nil, status.Error(codes.Internal, e.Message)
 	}
-	out := &ListArticlesResponse{Items: make([]*Article, 0, len(res.Items)), NextCursor: res.NextCursor}
+	out := &articlev1.ListArticlesResponse{Items: make([]*articlev1.Article, 0, len(res.Items)), NextCursor: res.NextCursor}
 	for _, d := range res.Items {
 		out.Items = append(out.Items, dtoToProto(d))
 	}
 	return out, nil
 }
 
+func (s *ArticleServer) GetArticleTitle(ctx context.Context, req *articlev1.GetArticleTitleRequest) (*articlev1.GetArticleTitleResponse, error) {
+	if req.GetId() <= 0 {
+		return nil, status.Error(
+			codes.InvalidArgument,
+			"article id must be greater than zero",
+		)
+	}
+
+	dto, err := s.svc.GetByID(ctx, req.GetId())
+	if err != nil {
+		e := errcode.FromError(err)
+
+		if e.Code == errcode.ErrNotFound.Code {
+			return nil, status.Error(codes.NotFound, e.Message)
+		}
+
+		return nil, status.Error(codes.Internal, e.Message)
+	}
+
+	return &articlev1.GetArticleTitleResponse{
+		Id:    dto.ID,
+		Title: dto.Title,
+	}, nil
+}
+
 // dtoToProto converts an application DTO to the gRPC message.
-func dtoToProto(d *article.ArticleDTO) *Article {
-	return &Article{
+func dtoToProto(d *article.ArticleDTO) *articlev1.Article {
+	return &articlev1.Article{
 		Id:         d.ID,
 		Title:      d.Title,
 		Content:    d.Content,
