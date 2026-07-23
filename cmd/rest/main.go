@@ -30,7 +30,7 @@ import (
 // @description     Type "Bearer {token}".
 func main() {
 	env := os.Getenv("APP_ENV")
-	log.Printf("APP_ENV: %s", env)
+	// log.Printf("APP_ENV: %s", env)
 	deps, err := wire.New(context.Background(), env)
 	if err != nil {
 		log.Fatalf("init: %v", err)
