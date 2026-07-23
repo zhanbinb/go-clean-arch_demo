@@ -13,8 +13,6 @@ tmp_app/
 configs/config.local.yaml
 
 # Generated code (rebuild during image build)
-api/gen/
-docs/swagger/
 
 # VCS metadata (huge!)
 .git/
