@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("connect gRPC server: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := articlev1.NewArticleServiceClient(conn)
 
